@@ -1,10 +1,11 @@
 /* 推箱子 PWA Service Worker：缓存应用外壳，支持离线/安装到本机。 */
-const CACHE = "soko-v6";
+const CACHE = "soko-v7";
 const ASSETS = [
   ".",
   "index.html",
   "style.css",
   "qrcode.min.js",
+  "ads.js",
   "game.js",
   "generator.js",
   "i18n.js",
