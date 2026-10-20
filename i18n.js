@@ -52,6 +52,11 @@
       storyBody: 'Story: you are the night-shift operator of an AI work-monitoring system. A glitch scattered the system\u2019s "job crates" across the warehouse \u2014 push every crate back onto its monitoring checkpoint so the AI can watch them run again.',
       storyTitle: 'Story',
       story: 'Story', share: 'Share', linkCopied: 'Link copied! Send it to your friends.',
+      scan: 'Scan', scanTitle: 'Scan to Download',
+      scanDesc: 'Open your phone camera and scan the code to open the game on your phone, then install it as an app.',
+      scanAndroid: 'Android: tap "Install App" in the game to add it to your home screen.',
+      scanIos: 'iPhone: tap Share → "Add to Home Screen".',
+      copyLink: 'Copy Link',
       iosInstallHint: 'On iPhone/iPad (Safari): tap the Share button, then "Add to Home Screen" to install as an app.',
       guestHint: 'Progress is saved automatically on this device (guest mode). Account system coming soon.',
       guestMode: 'Guest Mode (no account needed)',
@@ -98,6 +103,11 @@
       accountSoon: '完整账号（多端同步、已验证排行榜）正在开发中。',
       storyTitle: '背景故事',
       story: '背景故事', share: '分享', linkCopied: '链接已复制！发给你的朋友吧。',
+      scan: '扫码', scanTitle: '扫码下载',
+      scanDesc: '用手机相机扫一下下面的二维码，在手机上打开游戏，即可安装为 App 离线玩。',
+      scanAndroid: '安卓：打开后点游戏里的"安装应用"，添加到桌面。',
+      scanIos: '苹果：打开后点"分享"→"添加到主屏幕"。',
+      copyLink: '复制链接',
       iosInstallHint: 'iPhone/iPad（Safari）：点"分享"按钮，再选"添加到主屏幕"，即可作为 App 安装。'
     },
     'zh-Hant': {
