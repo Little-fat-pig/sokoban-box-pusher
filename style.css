@@ -98,3 +98,39 @@ html[dir="rtl"] .topbar-right { flex-direction: row-reverse; }
 .lb-table td:nth-child(3), .lb-table th:nth-child(3) { text-align: right; }
 .lb-table td:nth-child(4), .lb-table th:nth-child(4) { text-align: right; color: #3ddc84; }
 .hint { color: #8fa3c8; font-size: 12px; margin: 6px 0 0; }
+
+/* ---- 两侧弹窗广告（v2.6：内容来自数据库，无广告不占位）---- */
+.side-ad {
+  position: fixed; top: 50%; transform: translateY(-50%);
+  width: 148px; max-width: 24vw;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 14px 40px rgba(0,0,0,.5);
+  z-index: 40;                       /* 低于浮层(50)，不挡设置/排行榜 */
+  overflow: hidden; padding: 6px;
+  opacity: 0; transition: transform .35s cubic-bezier(.2,.8,.3,1), opacity .35s;
+}
+.side-ad.left  { left: 0;  border-top-left-radius: 0; border-bottom-left-radius: 0; transform: translate(-110%, -50%); }
+.side-ad.right { right: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; transform: translate(110%, -50%); }
+.side-ad.in { opacity: 1; }
+.side-ad.left.in  { transform: translate(0, -50%); }
+.side-ad.right.in { transform: translate(0, -50%); }
+.side-ad img { display: block; width: 100%; border-radius: 8px; cursor: pointer; aspect-ratio: 3 / 4; object-fit: cover; background: #0b0f1a; }
+.side-ad-close {
+  position: absolute; top: 4px; right: 4px; width: 26px; height: 26px;
+  border: none; border-radius: 50%; background: rgba(5,8,16,.75); color: #fff;
+  font-size: 15px; line-height: 1; cursor: pointer; z-index: 2;
+}
+.side-ad.left .side-ad-close { right: 4px; left: auto; }
+.side-ad-badge {
+  position: absolute; top: 8px; left: 8px; z-index: 2;
+  font-size: 10px; padding: 2px 6px; border-radius: 6px;
+  background: rgba(255,209,102,.16); color: #ffd166; border: 1px solid rgba(255,209,102,.35);
+}
+.side-ad.right .side-ad-badge { left: auto; right: 34px; }
+@media (max-width: 720px) {
+  .side-ad { width: 72px; max-width: 22vw; }
+  .side-ad img { aspect-ratio: 2 / 3; }
+}
+
+/* [hidden] 属性必须能压过 .ad-zone 的 display:flex（作者样式优先于 UA 样式）*/
+.ad-zone[hidden] { display: none !important; }
