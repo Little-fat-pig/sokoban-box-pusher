@@ -29,7 +29,8 @@
     </div>
   </header>
 
-  <div id="ad-zone" class="ad-zone">Advertisement</div>
+  <!-- 旧广告位已隐藏（v2.6 起广告改为屏幕两侧弹窗，内容来自数据库）-->
+  <div id="ad-zone" class="ad-zone" hidden></div>
 
   <main class="game">
     <div class="hud">
@@ -63,12 +64,6 @@
       <div class="actions">
         <button id="btnUndo" class="btn" data-i18n="undo">Undo</button>
         <button id="btnReset" class="btn" data-i18n="reset">Reset</button>
-        <button id="btnPrev" class="btn" data-i18n="prev">Prev</button>
-        <button id="btnNext" class="btn" data-i18n="next">Next</button>
-      </div>
-      <div class="jump">
-        <input id="jumpInput" type="number" min="1" placeholder="1" style="width:90px" />
-        <button id="jumpBtn" class="btn" data-i18n="goTo">Go</button>
       </div>
     </div>
   </main>
@@ -179,9 +174,22 @@
     <span data-i18n="best_is">Best</span> · © Sokoban (original implementation)
   </footer>
 
+  <!-- 两侧弹窗广告：内容全部来自数据库 ads 表（仅展示你配置的广告；无广告不占位）-->
+  <aside id="adLeft" class="side-ad left" hidden>
+    <button class="side-ad-close" id="adLeftClose" aria-label="close">×</button>
+    <span class="side-ad-badge" data-i18n="adLabel">Ad</span>
+    <img id="adLeftImg" alt="ad" />
+  </aside>
+  <aside id="adRight" class="side-ad right" hidden>
+    <button class="side-ad-close" id="adRightClose" aria-label="close">×</button>
+    <span class="side-ad-badge" data-i18n="adLabel">Ad</span>
+    <img id="adRightImg" alt="ad" />
+  </aside>
+
   <script src="qrcode.min.js"></script>
   <script src="config.js"></script>
   <script src="i18n.js"></script>
+  <script src="ads.js"></script>
   <script src="account.js"></script>
   <script src="generator.js"></script>
   <script src="game.js"></script>
