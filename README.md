@@ -2,7 +2,7 @@
 
 A classic sokoban puzzle game — infinite procedurally generated levels (deterministic & guaranteed solvable), 11 languages, works offline as an installable PWA.
 
-**Play:** https://sokoban-game-49679.app.workbuddy.host/?sharecode=STCB2S5KMX
+**Play:** https://little-fat-pig.github.io/sokoban-box-pusher/
 
 - Levels are generated on the fly by a reverse-pull algorithm (no level database — 30,000,000,000,000,000 levels supported)
 - Progress saved locally + optional cloud sync (Supabase)
