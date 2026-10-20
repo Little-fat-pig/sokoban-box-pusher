@@ -384,6 +384,49 @@ const storyModal = document.getElementById('storyModal');
 bind('storyBtn', () => storyModal.classList.remove('hidden'));
 bind('storyClose', () => storyModal.classList.add('hidden'));
 
+// ---- 扫码下载浮层：把当前网址编码成二维码，手机相机扫码即开即装 ----
+const scanModal = document.getElementById('scanModal');
+function drawQr() {
+  const cv = document.getElementById('qrCanvas');
+  if (!cv || typeof qrcode !== 'function') return;
+  // 二维码内容 = 当前网址（去掉 # 锚点），换任何部署地址都自动正确
+  const url = location.href.split('#')[0];
+  const qr = qrcode(0, 'M');
+  qr.addData(url);
+  qr.make();
+  const n = qr.getModuleCount();
+  const quiet = 4;                                   // 白色静区（扫描标准要求）
+  const total = n + quiet * 2;
+  const maxPx = 260;
+  const scale = Math.max(3, Math.floor(maxPx / total));
+  const size = total * scale;
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = size * dpr; cv.height = size * dpr;
+  cv.style.width = size + 'px'; cv.style.height = size + 'px';
+  const c = cv.getContext('2d');
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.fillStyle = '#ffffff'; c.fillRect(0, 0, size, size);
+  c.fillStyle = '#0b0f1a';
+  for (let r = 0; r < n; r++)
+    for (let col = 0; col < n; col++)
+      if (qr.isDark(r, col)) c.fillRect((col + quiet) * scale, (r + quiet) * scale, scale, scale);
+}
+bind('scanBtn', () => { scanModal.classList.remove('hidden'); drawQr(); });
+bind('scanClose', () => scanModal.classList.add('hidden'));
+bind('scanCopy', async () => {
+  const btn = document.getElementById('scanCopy');
+  const url = location.href.split('#')[0];
+  try { await navigator.clipboard.writeText(url); }
+  catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = url; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); ta.remove();
+  }
+  const old = btn.textContent;
+  btn.textContent = I.t('linkCopied');
+  setTimeout(() => { btn.textContent = old; }, 1500);
+});
+
 // ---- 排行榜（游客云端：按最高到达关排序；账号后台上线后改由服务端验证）----
 const lbModal = document.getElementById('leaderboardModal');
 bind('leaderboardBtn', async () => {
