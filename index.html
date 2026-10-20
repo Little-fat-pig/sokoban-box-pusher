@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f1320" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="Sokoban · Box Pusher — an original, infinite-level box-pushing puzzle. 30,000,000+ levels, 11 languages, installable as an app, works offline." />
+  <title>Sokoban · Box Pusher</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon-192.png" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo" aria-hidden="true"></span><span data-i18n="appTitle">Sokoban · Box Pusher</span></div>
+    <div class="topbar-right">
+      <select id="langSelect" aria-label="Language"></select>
+      <button id="storyBtn" class="btn small" data-i18n="story">Story</button>
+      <button id="shareBtn" class="btn small" data-i18n="share">Share</button>
+      <button id="leaderboardBtn" class="btn small" data-i18n="leaderboard">Leaderboard</button>
+      <button id="accountBtn" class="btn small" data-i18n="account">Account</button>
+      <button id="installBtn" class="btn small" hidden data-i18n="install">Install App</button>
+      <button id="settingsBtn" class="btn small" data-i18n="settings">Settings</button>
+    </div>
+  </header>
+
+  <div id="ad-zone" class="ad-zone">Advertisement</div>
+
+  <main class="game">
+    <div class="hud">
+      <span id="levelLabel" class="hud-item">Level 1</span>
+      <span id="tier" class="hud-item tier">Easy</span>
+      <span class="hud-item"><span data-i18n="best">Best</span>: <b id="best">—</b></span>
+      <span class="hud-item"><span data-i18n="par">Target</span>: <b id="par">—</b></span>
+      <span class="hud-item"><span data-i18n="moves">Moves</span>: <b id="moves">0</b></span>
+      <span class="hud-item"><span data-i18n="pushes">Pushes</span>: <b id="pushes">0</b></span>
+    </div>
+
+    <canvas id="board"></canvas>
+
+    <div class="legend">
+      <span class="lg"><i class="sw sw-t"></i><span data-i18n="legendTarget">Goal</span></span>
+      <span class="lg"><i class="sw sw-b"></i><span data-i18n="legendBox">Box</span></span>
+      <span class="lg"><i class="sw sw-bo"></i><span data-i18n="legendBoxOn">In place</span></span>
+      <span class="lg"><i class="sw sw-o"></i><span data-i18n="legendObstacle">Obstacle</span></span>
+      <span class="lg"><i class="sw sw-p"></i><span data-i18n="legendPlayer">You</span></span>
+    </div>
+
+    <div class="controls">
+      <div class="dpad">
+        <button id="btnUp" class="dbtn">▲</button>
+        <div class="dpad-mid">
+          <button id="btnLeft" class="dbtn">◀</button>
+          <button id="btnDown" class="dbtn">▼</button>
+          <button id="btnRight" class="dbtn">▶</button>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="btnUndo" class="btn" data-i18n="undo">Undo</button>
+        <button id="btnReset" class="btn" data-i18n="reset">Reset</button>
+        <button id="btnPrev" class="btn" data-i18n="prev">Prev</button>
+        <button id="btnNext" class="btn" data-i18n="next">Next</button>
+      </div>
+      <div class="jump">
+        <input id="jumpInput" type="number" min="1" placeholder="1" style="width:90px" />
+        <button id="jumpBtn" class="btn" data-i18n="goTo">Go</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- 通关 / 里程碑 浮层 -->
+  <div id="overlay" class="overlay hidden">
+    <div class="panel">
+      <h2 id="overlayTitle">Level Cleared!</h2>
+      <p id="overlayText"></p>
+      <div class="panel-actions">
+        <button id="nextBtn" class="btn primary" data-i18n="nextLevel">Next Level</button>
+        <button id="overlayClose" class="btn" data-i18n="close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 开始界面 -->
+  <div id="startOverlay" class="overlay hidden">
+    <div class="panel start-panel">
+      <h1 id="startTitle" data-i18n="startTitle">Sokoban</h1>
+      <p id="startBody" data-i18n="startBody">A relaxing puzzle.</p>
+      <p id="tagline" class="tagline"></p>
+      <div class="story-box">
+        <h3 data-i18n="storyTitle">Story</h3>
+        <p id="storyBody" class="hint" data-i18n="storyBody"></p>
+      </div>
+      <div class="panel-actions">
+        <button id="btnStart" class="btn primary" data-i18n="start">Start</button>
+        <button id="btnResume" class="btn" data-i18n="resume">Continue</button>
+      </div>
+      <p class="hint" data-i18n="guestHint">Progress is saved automatically on this device (guest mode). Account system coming soon.</p>
+    </div>
+  </div>
+
+  <!-- 背景故事浮层（游戏中随时查看）-->
+  <div id="storyModal" class="overlay hidden">
+    <div class="panel">
+      <h2 data-i18n="storyTitle">Story</h2>
+      <p id="storyBodyFull" class="hint" data-i18n="storyBody"></p>
+      <div class="panel-actions"><button id="storyClose" class="btn" data-i18n="close">Close</button></div>
+    </div>
+  </div>
+
+  <!-- 设置浮层 -->
+  <div id="settingsModal" class="overlay hidden">
+    <div class="panel">
+      <h2 data-i18n="settings">Settings</h2>
+      <label class="row"><span data-i18n="sound">Sound</span><input type="checkbox" id="setSound" /></label>
+      <label class="row"><span data-i18n="volume">Volume</span><input type="range" id="setVol" min="0" max="100" /><b id="volVal">40%</b></label>
+      <label class="row"><span data-i18n="tone">Tone (Hz)</span><input type="range" id="setTone" min="200" max="900" /><b id="toneVal">440 Hz</b></label>
+      <div class="panel-actions"><button id="settingsClose" class="btn" data-i18n="close">Close</button></div>
+    </div>
+  </div>
+
+  <!-- 账号浮层（邮箱验证码登录）-->
+  <div id="accountModal" class="overlay hidden">
+    <div class="panel">
+      <h2 data-i18n="account">Account</h2>
+      <div id="acctLoggedIn" style="display:none">
+        <p id="acctGuestInfo" class="hint"></p>
+        <label class="row"><span data-i18n="nickname">Nickname</span>
+          <input id="acctNicknameInput" maxlength="16" data-i18n-ph="nicknamePlaceholder" style="width:170px" />
+          <button id="acctNicknameSave" class="btn small" data-i18n="save">Save</button>
+        </label>
+        <p class="hint" data-i18n="nicknameHint">Your nickname (not your email) is shown on the leaderboard.</p>
+        <p class="hint" data-i18n="accountSoon">Full account (cross-device sync, verified leaderboard) is coming.</p>
+      </div>
+      <div id="acctForm">
+        <p data-i18n="sendCodeFirst">Enter your email and we will send a 6-character code.</p>
+        <input id="acctEmailInput" type="email" data-i18n-ph="emailPlaceholder" style="width:100%;box-sizing:border-box" />
+        <button id="acctSend" class="btn primary" data-i18n="sendCode">Send Code</button>
+        <div id="acctCodeRow" style="display:none;margin-top:10px">
+          <input id="acctCodeInput" maxlength="6" data-i18n-ph="codePlaceholder" style="width:100%;box-sizing:border-box" />
+          <button id="acctVerify" class="btn primary" data-i18n="verifyPlay">Verify &amp; Play</button>
+        </div>
+        <p id="acctMsg" class="hint"></p>
+      </div>
+      <div class="panel-actions"><button id="accountClose" class="btn" data-i18n="close">Close</button></div>
+    </div>
+  </div>
+
+  <!-- 排行榜浮层（每日 8:00 快照前一天进度）-->
+  <div id="leaderboardModal" class="overlay hidden">
+    <div class="panel">
+      <h2 data-i18n="leaderboard">Leaderboard</h2>
+      <p class="hint" data-i18n="lbHint">Updates daily at 8:00 with yesterday's progress.</p>
+      <div id="leaderboardBody"></div>
+      <div class="panel-actions"><button id="leaderboardClose" class="btn" data-i18n="close">Close</button></div>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <span data-i18n="best_is">Best</span> · © Sokoban (original implementation)
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="i18n.js"></script>
+  <script src="account.js"></script>
+  <script src="generator.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
