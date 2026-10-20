@@ -73,7 +73,6 @@ const ctx = canvas.getContext("2d");
 const overlay = document.getElementById("overlay");
 const overlayText = document.getElementById("overlayText");
 const overlayTitle = document.getElementById("overlayTitle");
-const adZone = document.getElementById("ad-zone");
 const key = (x, y) => x + "," + y;
 const hasBox = (x, y) => boxes.some((b) => b.x === x && b.y === y);
 
@@ -84,8 +83,13 @@ function tierLabel(tier) {
 function loadLevel(i) {
   let bi = window.SokoGen.toBig(i);
   if (bi > MAX_LEVEL) bi = MAX_LEVEL;
+  if (bi < 1n) bi = 1n;
+  // 解锁校验：禁止跳关——只能玩“最高已通关 + 1”及以前的关
+  if (Acct) {
+    const unlocked = Acct.getUnlocked();
+    if (bi > unlocked) { bi = unlocked; showToast(I.t('levelLocked')); }
+  }
   cur = bi;
-  if (Acct) Acct.reachLevel(cur);   // 记录“到达过这一关”，供继续/云端同步
   const lv = window.SokoGen.getLevel(cur);
   rows = lv.map.length; cols = lv.map[0].length;
   walls = new Set(); obstacles = new Set(); targets = new Set(); boxes = []; player = { x: 0, y: 0 };
@@ -103,6 +107,7 @@ function loadLevel(i) {
   overlay.classList.add("hidden");
   applyHud();
   resize(); updateHud();
+  if (window.SokoAds) window.SokoAds.maybeShow('level');   // 两侧弹窗广告（仅数据库里配置的广告）
 }
 
 function applyHud() {
@@ -153,11 +158,12 @@ function checkWin() {
   if (prevBest == null || moves < prevBest) {
     setLocalBest(cur, moves);
     bestLine = "🏆 " + I.t('best_is') + " " + moves + " " + I.t('moves');
-    // 落盘总进度（本地 + 可选云端）：已通关，下一关即“到达”
-    if (Acct) Acct.reachLevel(cur + 1n);
   } else {
     bestLine = I.t('best_is') + " " + prevBest + " (" + I.t('moves') + " " + moves + ")";
   }
+  // 记录通关（本地 + 可选云端）：解锁下一关。无论是否破纪录都算通关。
+  if (Acct) Acct.winLevel(cur);
+  if (window.SokoAds) window.SokoAds.maybeShow('win');
   const isMilestone = cur % 500n === 0n;
   overlayTitle.textContent = isMilestone ? I.t('allClearTitle') : I.t('winTitle');
   overlayText.innerHTML = "🎉 " + (isMilestone ? I.t('allClearBody') + "<br>" : "") +
@@ -171,7 +177,10 @@ function updateHud() { document.getElementById("moves").textContent = moves; doc
 function resize() {
   if (!cols || !rows) return;
   const dpr = window.devicePixelRatio || 1;
-  const availW = Math.min(window.innerWidth - 24, 680);
+  // 两侧弹窗广告展示中 → 棋盘给广告让位（避免广告压住棋盘边缘）
+  const adsOn = document.body && document.body.classList.contains('ads-on');
+  const panelW = (window.SokoAds && window.SokoAds.panelWidth) ? window.SokoAds.panelWidth() : 148;
+  const availW = Math.min(window.innerWidth - 24 - (adsOn ? panelW * 2 : 0), 680);
   // 预留顶部栏/HUD/图例/方向键高度：保证手机上一屏能看全地图+操作区（手机上玩的关：格子小、图完整）
   const chromeH = window.innerWidth < 720 ? 300 : 240;
   const availH = Math.max(160, window.innerHeight - chromeH);
@@ -339,15 +348,10 @@ const bind = (id, fn) => { const el = document.getElementById(id); if (el) el.on
 bind("btnUp", () => move(0, -1)); bind("btnDown", () => move(0, 1));
 bind("btnLeft", () => move(-1, 0)); bind("btnRight", () => move(1, 0));
 bind("btnUndo", undo); bind("btnReset", reset);
-bind("btnPrev", () => loadLevel(cur - 1n)); bind("btnNext", () => loadLevel(cur + 1n));
+// v2.6：移除 Prev/Next/跳关——关卡只能靠通关解锁（见 loadLevel 的解锁校验）
+// nextBtn 仅出现在通关浮层，是合法的“进入下一关”入口
 bind("nextBtn", () => loadLevel(cur + 1n));
 bind("overlayClose", () => overlay.classList.add("hidden"));
-bind("jumpBtn", () => {
-  const raw = document.getElementById("jumpInput").value.replace(/[,\s]/g, "");
-  if (!/^\d+$/.test(raw)) return;
-  let v; try { v = BigInt(raw); } catch (e) { return; }
-  if (v >= 1n && v <= MAX_LEVEL) loadLevel(v);
-});
 
 let tsx = 0, tsy = 0;
 canvas.addEventListener("touchstart", (e) => { const t = e.changedTouches[0]; tsx = t.clientX; tsy = t.clientY; }, { passive: true });
@@ -377,7 +381,7 @@ function showStart() {
   s.classList.remove('hidden');
 }
 bind("btnStart", () => { document.getElementById('startOverlay').classList.add('hidden'); loadLevel(1); });
-bind("btnResume", () => { document.getElementById('startOverlay').classList.add('hidden'); loadLevel(gLastLevel() > 1n ? gLastLevel() : 1); });
+bind("btnResume", () => { document.getElementById('startOverlay').classList.add('hidden'); loadLevel(Acct ? Acct.getUnlocked() : 1); });
 
 // ---- 背景故事浮层（游戏中随时查看）----
 const storyModal = document.getElementById('storyModal');
@@ -511,33 +515,28 @@ bind('acctNicknameSave', async () => {
   renderGuestAcct();
 });
 
-// ---- 广告位（后台可配置）----
-function renderAd(html) {
-  if (html && html.trim()) { adZone.classList.add("iframe-host"); adZone.innerHTML = html; }
-  else { adZone.classList.remove("iframe-host"); adZone.textContent = I.t('adLabel'); }
-}
-
-// ---- 后台配置（Supabase 可选；填了才联网拉取）----
+// ---- 后台配置（Supabase 可选；填了才联网拉取。仅音效配置，广告已改两侧弹窗/数据库驱动）----
 async function loadRemoteConfig() {
   const cfg = window.SOKO_CONFIG || {};
-  let local = (cfg.fallback) || { sound: { on: true, volume: 40, tone: 440 }, adHtml: "" };
+  let local = (cfg.fallback) || { sound: { on: true, volume: 40, tone: 440 } };
   if (local.sound) {
     settings.on = local.sound.on != null ? local.sound.on : settings.on;
     settings.volume = local.sound.volume != null ? local.sound.volume : settings.volume;
     settings.tone = local.sound.tone != null ? local.sound.tone : settings.tone;
     saveSettings(settings);
   }
-  renderAd(local.adHtml || "");
   if (cfg.supabaseUrl && cfg.supabaseAnon) {
     try {
       const r = await fetch(cfg.supabaseUrl + "/rest/v1/soko_config?select=*&id=eq.1", {
         headers: { "apikey": cfg.supabaseAnon, "Authorization": "Bearer " + cfg.supabaseAnon }
       });
       const rows = await r.json();
-      if (rows && rows[0]) {
-        const row = rows[0];
-        if (row.sound) { settings.on = row.sound.on != null ? row.sound.on : settings.on; settings.volume = row.sound.volume != null ? row.sound.volume : settings.volume; settings.tone = row.sound.tone != null ? row.sound.tone : settings.tone; saveSettings(settings); }
-        if (row.ad_html != null) renderAd(row.ad_html);
+      if (rows && rows[0] && rows[0].sound) {
+        const s = rows[0].sound;
+        settings.on = s.on != null ? s.on : settings.on;
+        settings.volume = s.volume != null ? s.volume : settings.volume;
+        settings.tone = s.tone != null ? s.tone : settings.tone;
+        saveSettings(settings);
       }
     } catch (e) {}
   }
@@ -585,8 +584,7 @@ loadRemoteConfig();
 if (typeof requestAnimationFrame === 'function') requestAnimationFrame(animLoop);   // 终点呼吸动画
 (async () => {
   if (Acct) {
-    const p = await Acct.loadProgress();   // 游客：合并云端最高关到本地
-    if (p) Acct.reachLevel(window.SokoGen.toBig(p.maxLevel || '1'));
+    await Acct.loadProgress();   // 游客：合并云端最高【已通关】关到本地（只合并，不推进）
   }
   applyHud();
   showStart();
