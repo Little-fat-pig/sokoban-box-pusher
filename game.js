@@ -375,9 +375,33 @@ function applyI18n() {
 }
 
 // ---- 开始界面 ----
+// v2.6.1（用户："已经有一次玩过的记录，就不要出现开始游戏，可以出现继续游戏"）
+// 玩过（通关过任何一关，或本机存过最佳成绩）→ 只显示【继续】，直接接着玩；
+// 全新玩家 → 只显示【开始】。两个按钮不再同时出现，避免"到底点哪个"。
+function playedBefore() {
+  return (Acct && gMaxLevel() > 1n) || getLocalBest(2) != null || (Acct && Acct.getLastLevel() !== '1');
+}
 function showStart() {
   const s = document.getElementById('startOverlay');
-  document.getElementById('btnResume').style.display = (gMaxLevel() > 1n || getLocalBest(2) != null) ? 'inline-block' : 'none';
+  const bStart = document.getElementById('btnStart');
+  const bResume = document.getElementById('btnResume');
+  const resumeInfo = document.getElementById('resumeInfo');
+  const played = playedBefore();
+  bStart.style.display = played ? 'none' : 'inline-block';
+  bResume.style.display = played ? 'inline-block' : 'none';
+  // 玩过的玩家把"继续"做成主按钮（视觉上引导到唯一正确的动作）
+  bResume.classList.toggle('primary', played);
+  bStart.classList.toggle('primary', !played);
+  if (played && resumeInfo) {
+    const next = Acct ? Acct.getUnlocked() : 2n;
+    const done = gMaxLevel();
+    resumeInfo.textContent = I.t('resumeInfo')
+      .replace('{n}', next.toString())
+      .replace('{done}', (done > 0n ? done : 1n).toString());
+    resumeInfo.style.display = 'block';
+  } else if (resumeInfo) {
+    resumeInfo.style.display = 'none';
+  }
   s.classList.remove('hidden');
 }
 bind("btnStart", () => { document.getElementById('startOverlay').classList.add('hidden'); loadLevel(1); });
