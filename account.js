@@ -3,7 +3,8 @@
  * 设计目标：无账号也能为每个人记录进度。
  *
  * 1) 本地优先：每个浏览器自动生成一个不可猜测的 device_id（随机 UUID），
- *    把“最高到达关卡 / 上次位置 / 昵称”存进 localStorage。立刻可用，零后端。
+ *    把“最高已通关关卡 / 上次位置 / 昵称”存进 localStorage。立刻可用，零后端。
+ *    （v2.6 起语义为“已通关”：禁止跳关，只有通关才解锁下一关）
  * 2) 可选云端同步：若 config.js 填了 Supabase（当前已填），且你已在后台执行
  *    supabase_guest_progress.sql，则把 {device_id, max_level, nickname} 同步到 Supabase，
  *    实现“换设备/清缓存不丢最高进度”。未执行 SQL 则自动降级为纯本地。
@@ -31,7 +32,7 @@
   }
 
   function loadLocal() {
-    const base = { deviceId: getDeviceId(), maxLevel: '1', lastLevel: '1', nickname: '' };
+    const base = { deviceId: getDeviceId(), maxLevel: '0', lastLevel: '1', nickname: '', migratedV26: false };
     try {
       const raw = localStorage.getItem(LS.progress);
       if (raw) {
@@ -40,8 +41,20 @@
         if (o.maxLevel) base.maxLevel = String(o.maxLevel);
         if (o.lastLevel) base.lastLevel = String(o.lastLevel);
         if (typeof o.nickname === 'string') base.nickname = o.nickname;
+        if (o.migratedV26) base.migratedV26 = true;
       }
     } catch (e) {}
+    // v2.6 起 maxLevel 语义 = “最高已通关关卡”（旧版 = “最高到达过”）。
+    // 旧数据一次迁移：旧版每通关一关会把 maxLevel 推到 cur+1，故减 1 对齐；
+    // 只到达未通关的会少算 1 级（可接受，仅影响起始解锁位置）。
+    if (!base.migratedV26) {
+      try {
+        const old = BigInt(base.maxLevel || '0');
+        base.maxLevel = (old > 1n ? old - 1n : 0n).toString();
+      } catch (e) { base.maxLevel = '0'; }
+      base.migratedV26 = true;
+      saveLocal();
+    }
     return base;
   }
 
@@ -121,16 +134,19 @@
   function BigIntSafe(s) { try { return BigInt(String(s).trim() || '1'); } catch (e) { return 1n; } }
 
   // ---- 进度读写（对 game.js 暴露的 API）----
+  // v2.6 起语义：maxLevel = 最高【已通关】关卡（不再记录“到达过”），禁止跳关。
   function getMaxLevel() { return state.maxLevel; }              // 字符串，调用方用 toBig
   function getLastLevel() { return state.lastLevel; }            // 字符串
+  function getUnlocked() { return BigIntSafe(state.maxLevel) + 1n; }   // 第一个未通关关（可玩的最新关）
   function reachLevel(l) {                                       // l 可为 BigInt 或数字或字符串
     const n = BigIntSafe(l);
-    const cur = BigIntSafe(state.maxLevel || '1');
+    const cur = BigIntSafe(state.maxLevel || '0');
     if (n > cur) state.maxLevel = n.toString();
     state.lastLevel = n.toString();
     saveLocal();
     syncToCloud();
   }
+  function winLevel(l) { reachLevel(l); }                        // 语义化：通关第 l 关 → 解锁 l+1
   function getNickname() { return state.nickname || ''; }
   function setNickname(nick) {
     state.nickname = (nick || '').trim().slice(0, 16);
@@ -179,7 +195,7 @@
 
   const API = {
     isGuest, isLoggedIn, isCloud, getDeviceId: getDeviceIdPublic,
-    getMaxLevel, getLastLevel, reachLevel,
+    getMaxLevel, getLastLevel, getUnlocked, reachLevel, winLevel,
     getNickname, setNickname,
     loadProgress, saveProgress, fetchLeaderboard,
     submitWin, requestCode, verifyCode, getProfile, logout, fnBase,
