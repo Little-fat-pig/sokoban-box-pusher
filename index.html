@@ -20,6 +20,7 @@
     <div class="topbar-right">
       <select id="langSelect" aria-label="Language"></select>
       <button id="storyBtn" class="btn small" data-i18n="story">Story</button>
+      <button id="scanBtn" class="btn small" data-i18n="scan">Scan</button>
       <button id="shareBtn" class="btn small" data-i18n="share">Share</button>
       <button id="leaderboardBtn" class="btn small" data-i18n="leaderboard">Leaderboard</button>
       <button id="accountBtn" class="btn small" data-i18n="account">Account</button>
@@ -111,6 +112,21 @@
     </div>
   </div>
 
+  <!-- 扫码下载浮层：手机相机扫码 → 打开 → 安装 App -->
+  <div id="scanModal" class="overlay hidden">
+    <div class="panel">
+      <h2 data-i18n="scanTitle">Scan to Download</h2>
+      <canvas id="qrCanvas" width="240" height="240" style="margin:0 auto;display:block;border-radius:10px;background:#fff"></canvas>
+      <p class="hint" data-i18n="scanDesc">Open your phone camera and scan the code to open the game on your phone, then install it as an app.</p>
+      <p class="hint" data-i18n="scanAndroid">Android: tap "Install App" in the game to add it to your home screen.</p>
+      <p class="hint" data-i18n="scanIos">iPhone: tap Share → "Add to Home Screen".</p>
+      <div class="panel-actions">
+        <button id="scanCopy" class="btn small" data-i18n="copyLink">Copy Link</button>
+        <button id="scanClose" class="btn" data-i18n="close">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 设置浮层 -->
   <div id="settingsModal" class="overlay hidden">
     <div class="panel">
@@ -163,6 +179,7 @@
     <span data-i18n="best_is">Best</span> · © Sokoban (original implementation)
   </footer>
 
+  <script src="qrcode.min.js"></script>
   <script src="config.js"></script>
   <script src="i18n.js"></script>
   <script src="account.js"></script>
